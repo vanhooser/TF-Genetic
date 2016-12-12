@@ -26,9 +26,8 @@ This package allows for easy simulation of an arbitrary number of layers/neurons
 └── src
     ├── Chromosome.py
     ├── GeneticNetwork.py
-    ├── GeneticPool.py
+    ├── TFGenetic.py
     └── tests.py
-
 ```
 
 ## Thirty Seconds to TF-Genetic
