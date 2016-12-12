@@ -1,6 +1,6 @@
 import tensorflow as tf
 import Chromosome as chrom
-import GeneticPool as gp
+import TFGenetic as gen
 import random
 
 
@@ -64,7 +64,7 @@ if __name__ == '__main__':
 
 	if testing:
 		validActivationFunctions = [tf.nn.sigmoid, tf.nn.tanh, tf.nn.relu, tf.nn.softsign]
-		g = gp.GeneticPool(populationSize = 10, 
+		g = gen.GeneticPool(populationSize = 10, 
 			tournamentSize = 4,
 			memberDimensions = [4, 10, 5, 1], 
 			validActivationFunctions = validActivationFunctions)
