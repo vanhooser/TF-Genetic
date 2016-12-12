@@ -29,21 +29,16 @@ _Based on the work of Maul et al in [this](http://www.scs-europe.net/dlib/2014/e
 
 
 1. Import dependencies
-
 ```python
 import tensorflow as tf
 import numpy as np
 import TFGenetic as gen
 ```
-
 2. Define valid activation functions the genetic algorithm will evolve
-
 ```python
 validActivationFunctions = [tf.nn.sigmoid, tf.nn.tanh, tf.nn.relu, tf.nn.softsign]
 ```
-
 3. Initialize a genetic algorithm population and describe the initial structure of the population dimensions.  Here with the Iris dataset, the network is a 4 -> x -> 1 network type
-
 ```python	
 g = gen.GeneticPool(
  			populationSize = 10, 
@@ -53,9 +48,7 @@ g = gen.GeneticPool(
 			)
 g.generatePopulation()
 ```
-
 4. For number of generations specified, cycle and generate new individuals
-		
 ```python
 numGenerations = 100
 for _ in range(numGenerations):
