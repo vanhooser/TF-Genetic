@@ -4,6 +4,7 @@ import GeneticNetwork as gn
 import numpy as np
 import random
 import matplotlib
+import copy
 matplotlib.use('tkAgg')
 from matplotlib import pyplot as plt
 
@@ -73,15 +74,12 @@ class GeneticPool(object):
 		bestFitness, bestChromosome = zippedFitnesses[0]
 
 		#newPopulation = [gn.GeneticNetwork(bestChromosome, self.dimensionsForStructure(bestChromosome), self.validActivationFunctions)]
-		newChromosomes = [bestChromosome]
+		newChromosomes = [list(bestChromosome)]
 
 
 		for tournamentNumber in range(self.populationSize - 1):
 			m1, m2 = self.tournamentSelect(zippedFitnesses)
 			child = self.crossover(m1, m2)
-			print("=", m1)
-			print("=", m2)
-			print("++++", child)
 			newChromosomes += [child]
 			#dims = self.dimensionsForStructure(child)
 			#member = gn.GeneticNetwork(child, dims, self.validActivationFunctions)
@@ -89,6 +87,9 @@ class GeneticPool(object):
 
 		#self.population = newPopulation
 		self.chromosomes = newChromosomes
+
+		for c in self.chromosomes:
+			print(c)
 
 		return
 
@@ -115,7 +116,7 @@ class GeneticPool(object):
 		return len(tournamentSelected) - 1
 
 	def crossover(self, m1, m2):
-		(f1, c1), (f2, c2) = m1, m2
+		(f1, c1), (f2, c2) = list(m1), list(m2)
 		totalFitness = f1 + f2
 		returnedChromosome = []
 		previousOutputDimension = c1[0][0][0]
@@ -124,7 +125,7 @@ class GeneticPool(object):
 			layerChromosome = []
 			currentOutputDimension = 0
 			for functionIndex in range(len(c1Layer)):
-				(c1i, c1o), (c2i, c2o) = c1Layer[functionIndex], c2Layer[functionIndex]
+				(c1i, c1o), (c2i, c2o) = tuple(c1Layer[functionIndex]), tuple(c2Layer[functionIndex])
 				selectedRandom = random.random() * totalFitness
 				if selectedRandom - f1 <= 0:
 					# Select c1 point function
@@ -136,15 +137,14 @@ class GeneticPool(object):
 					# Select c2 point function
 			returnedChromosome += [layerChromosome]
 			previousOutputDimension = currentOutputDimension
-		print("Upon exiting loop, final output dimension is : ", previousOutputDimension)
 		finalLayer = None
 		if f1 > f2:
 			# Select final output from c1
-			finalLayer = list(c1[-1])
+			finalLayer = copy.deepcopy(c1[-1])
 
 		else:
 			# Select final output from c2
-			finalLayer = list(c2[-1])
+			finalLayer = copy.deepcopy(c2[-1])
 		for idx in range(len(finalLayer)):
 			finalLayer[idx][0] = previousOutputDimension
 		returnedChromosome += [finalLayer]
