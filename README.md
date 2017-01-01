@@ -3,7 +3,7 @@
 
 _Based on the work of Maul et al in [this](http://www.scs-europe.net/dlib/2014/ecms14papers/is_ECMS2014_0035.pdf) paper_
 
-![Evolution](TF-Genetic/src/images/evolution_1.gif)
+![Evolution](https://github.com/thepropterhoc/TF-Genetic/blob/master/src/images/evolution_1.gif)
 
 ## Description
 
