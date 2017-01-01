@@ -64,14 +64,17 @@ if __name__ == '__main__':
 
 	if testing:
 		validActivationFunctions = [tf.nn.sigmoid, tf.nn.tanh, tf.nn.relu, tf.nn.softsign]
-		g = gen.GeneticPool(populationSize = 10, 
+		activationFunctionColors = ['g', 'r', 'b', 'y']
+		g = gen.GeneticPool(populationSize = 20, 
 			tournamentSize = 4,
 			memberDimensions = [4, 10, 5, 1], 
-			validActivationFunctions = validActivationFunctions)
+			mutationRate = 0.05,
+			validActivationFunctions = validActivationFunctions,
+			activationFunctionColors = activationFunctionColors)
 		g.generatePopulation()
-		for _ in range(5):
+		for generationNumber in range(20):
 			g.cycle()
-			g.generation()
+			g.generation(generationNumber)
 		g.plotEvolution()
 	else:
 		experiments()

@@ -1,12 +1,13 @@
+import matplotlib
+matplotlib.use('tkAgg')
+
 import tensorflow as tf
 import Chromosome as chrom
 import GeneticNetwork as gn
 import numpy as np
 import random
-import matplotlib
+import matplotlib.pyplot as plt
 import copy
-matplotlib.use('tkAgg')
-from matplotlib import pyplot as plt
 
 class GeneticPool(object):
 	def __init__(self, 
@@ -15,8 +16,9 @@ class GeneticPool(object):
 		mutationRate = 0.1, 
 		memberDimensions = [5,5,1], 
 		validActivationFunctions = [tf.nn.sigmoid],
+		activationFunctionColors = [],
 		numEpochs = 30):
-		self.populationSize, self.tournamentSize, self.mutationRate, self.memberDimensions, self.validActivationFunctions, self.numEpochs = populationSize, tournamentSize, mutationRate, memberDimensions, validActivationFunctions, numEpochs
+		self.populationSize, self.tournamentSize, self.mutationRate, self.memberDimensions, self.validActivationFunctions, self.numEpochs, self.activationFunctionColors = populationSize, tournamentSize, mutationRate, memberDimensions, validActivationFunctions, numEpochs, activationFunctionColors
 		self.evolutionPlot = []
 
 	def generatePopulation(self):
@@ -24,7 +26,6 @@ class GeneticPool(object):
 		for _ in range(self.populationSize):
 			c = self.generateChromosome()
 			self.chromosomes += [c]
-			
 
 	def dimensionsForStructure(self, networkDimensions=[]):
 		returnedDimensions = [networkDimensions[0][0][0]]
@@ -35,15 +36,75 @@ class GeneticPool(object):
 			returnedDimensions += [currentOutputDimension]
 		return returnedDimensions
 
+	def draw_neural_net(self, ax, left, right, bottom, top, layer_sizes):
+			'''
+			Draw a neural network cartoon using matplotilb.
+			
+			:usage:
+					>>> fig = plt.figure(figsize=(12, 12))
+					>>> draw_neural_net(fig.gca(), .1, .9, .1, .9, [4, 7, 2])
+			
+			:parameters:
+					- ax : matplotlib.axes.AxesSubplot
+							The axes on which to plot the cartoon (get e.g. by plt.gca())
+					- left : float
+							The center of the leftmost node(s) will be placed here
+					- right : float
+							The center of the rightmost node(s) will be placed here
+					- bottom : float
+							The center of the bottommost node(s) will be placed here
+					- top : float
+							The center of the topmost node(s) will be placed here
+					- layer_sizes : list of int
+							List of layer sizes, including input and output dimensionality
+			'''
+
+			n_layers = len(layer_sizes) + 1
+			maxLayerSize = 0
+
+			for layer_group in layer_sizes:
+				layer_size = sum(map(lambda x: x[1], layer_group))
+				maxLayerSize = max(maxLayerSize, layer_size)
+			v_spacing = (top - bottom)/float(maxLayerSize)
+			h_spacing = (right - left)/float(len(layer_sizes) - 1)
+
+			# Nodes
+			for layerIndex, layer_group in enumerate(layer_sizes):
+				layer_size = sum(map(lambda x: x[1], layer_group))
+				layer_top = v_spacing*(layer_size - 1)/2. + (top + bottom)/2.
+				currentIndex = 0
+				for functionIndex, (inputSize, outputSize) in enumerate(layer_group):
+
+					if outputSize > 0:
+						
+						for nodeIndex in range(outputSize):
+							circle = plt.Circle((layerIndex*h_spacing + left, layer_top - currentIndex*v_spacing), v_spacing/4.,
+																	color=self.activationFunctionColors[functionIndex], ec='k', zorder=4)
+							ax.add_artist(circle)
+							currentIndex += 1
+					else:
+						# Null nodes, ignore and keep going 
+						continue
+							
+			"""
+			# Edges
+			for n, (layer_size_a, layer_size_b) in enumerate(zip(layer_sizes[:-1], layer_sizes[1:])):
+					layer_top_a = v_spacing*(layer_size_a - 1)/2. + (top + bottom)/2.
+					layer_top_b = v_spacing*(layer_size_b - 1)/2. + (top + bottom)/2.
+					for m in xrange(layer_size_a):
+							for o in xrange(layer_size_b):
+									line = plt.Line2D([n*h_spacing + left, (n + 1)*h_spacing + left],
+																		[layer_top_a - m*v_spacing, layer_top_b - o*v_spacing], c='k')
+									ax.add_artist(line)
+			"""
+
 	def cycle(self):
 		self.fitnesses = []
-		# Load datasets.
 		ds = tf.contrib.learn.datasets.base.load_iris()
 		ins = ds.data
 		outs = ds.target
 
 		for c in self.chromosomes:
-			print(c)
 			dims = self.dimensionsForStructure(c)
 			member = gn.GeneticNetwork(c, dims, self.validActivationFunctions)
 			finalLoss = 0.0
@@ -53,16 +114,10 @@ class GeneticPool(object):
 					finalLoss = thisLoss
 				else:
 					continue
-					"""
-					if epoch % int(float(self.numEpochs) / 10.0) == 0:
-						print("Epoch ", epoch, " : ", thisLoss)
-						"""
 			self.fitnesses += [finalLoss]
-			print("Member acheived fitness : ", finalLoss)
 			member.close()
 
-	def generation(self):
-		
+	def generation(self, generationNumber):
 		zippedFitnesses = sorted(zip(self.fitnesses, self.chromosomes), key=lambda x: x[0])
 		currentTotalFitness = 0.0
 		for f, c in zippedFitnesses:
@@ -72,25 +127,24 @@ class GeneticPool(object):
 		print("Current total Error : ", currentTotalFitness)
 
 		bestFitness, bestChromosome = zippedFitnesses[0]
-
-		#newPopulation = [gn.GeneticNetwork(bestChromosome, self.dimensionsForStructure(bestChromosome), self.validActivationFunctions)]
 		newChromosomes = [list(bestChromosome)]
 
+		fig = plt.figure(figsize=(12, 12))
+		ax = fig.gca()
+		ax.axis('off')
+		self.draw_neural_net(ax, .1, .9, .1, .9, bestChromosome)
+		fig.savefig('./images/best_{0}.png'.format(generationNumber))
 
 		for tournamentNumber in range(self.populationSize - 1):
 			m1, m2 = self.tournamentSelect(zippedFitnesses)
 			child = self.crossover(m1, m2)
 			newChromosomes += [child]
-			#dims = self.dimensionsForStructure(child)
-			#member = gn.GeneticNetwork(child, dims, self.validActivationFunctions)
-			#newPopulation += [member]
 
-		#self.population = newPopulation
+		for idx in range(len(newChromosomes)):
+			if random.random() < self.mutationRate:
+				newChromosomes[idx] = self.generateChromosome()
+				print("MUTATION at index ", idx, " to chromosome ", newChromosomes[idx])
 		self.chromosomes = newChromosomes
-
-		for c in self.chromosomes:
-			print(c)
-
 		return
 
 	def tournamentSelect(self, zippedFitnesses=[]):
