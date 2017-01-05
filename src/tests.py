@@ -63,16 +63,34 @@ if __name__ == '__main__':
 	testing = True
 
 	if testing:
-		validActivationFunctions = [tf.nn.sigmoid, tf.nn.tanh, tf.nn.relu, tf.nn.softsign]
-		activationFunctionColors = ['g', 'r', 'b', 'y']
-		g = gen.GeneticPool(populationSize = 20, 
+
+		# Use TensorFlow's built-in Iris dataset
+		ds = tf.contrib.learn.datasets.base.load_iris()
+		ins = ds.data
+
+		# Auto-encode the data
+		outs = ds.data
+
+		# Declare valid activation functions for the network, and their corresponding colors for plotting
+		validActivationFunctions = [tf.nn.sigmoid, tf.nn.tanh, tf.nn.relu, tf.nn.softsign, tf.nn.elu]
+		activationFunctionColors = ['g', 'r', 'b', 'y', 'c']
+
+		# Declare the genetic pool and initialize properties
+		g = gen.GeneticPool(populationSize = 30, 
 			tournamentSize = 4,
-			memberDimensions = [4, 10, 5, 1], 
+			memberDimensions = [4, 10, 10, 4], 
 			mutationRate = 0.05,
+			averagesCount = 2,
 			validActivationFunctions = validActivationFunctions,
-			activationFunctionColors = activationFunctionColors)
+			activationFunctionColors = activationFunctionColors,
+			ins = ins,
+			outs = outs)
+
+		# Generate population and train
 		g.generatePopulation()
-		for generationNumber in range(20):
+
+		generationCount = 30
+		for generationNumber in range(generationCount):
 			g.cycle()
 			g.generation(generationNumber)
 		g.plotEvolution()

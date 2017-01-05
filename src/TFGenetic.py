@@ -8,18 +8,39 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 import copy
+import multiprocessing
 
 class GeneticPool(object):
-	def __init__(self, 
+	def __init__(
+		self, 
 		populationSize = 10, 
 		tournamentSize = 2, 
 		mutationRate = 0.1, 
 		memberDimensions = [5,5,1], 
 		validActivationFunctions = [tf.nn.sigmoid],
 		activationFunctionColors = [],
-		numEpochs = 30):
-		self.populationSize, self.tournamentSize, self.mutationRate, self.memberDimensions, self.validActivationFunctions, self.numEpochs, self.activationFunctionColors = populationSize, tournamentSize, mutationRate, memberDimensions, validActivationFunctions, numEpochs, activationFunctionColors
+		numEpochs = 500,
+		averagesCount = 3,
+		ins = None,
+		outs = None):
+
+		self.populationSize = populationSize
+		self.tournamentSize = tournamentSize
+		self.mutationRate = mutationRate
+		self.memberDimensions = memberDimensions
+		self.validActivationFunctions = validActivationFunctions
+		self.numEpochs = numEpochs
+		self.activationFunctionColors = activationFunctionColors
+		self.averagesCount = averagesCount
+
 		self.evolutionPlot = []
+
+		if ins is None and outs is None:
+			ds = tf.contrib.learn.datasets.base.load_iris()
+			self.ins = ds.data
+			self.outs = ds.target
+		else:
+			self.ins, self.outs = ins, outs
 
 	def generatePopulation(self):
 		self.chromosomes = []
@@ -98,27 +119,31 @@ class GeneticPool(object):
 									ax.add_artist(line)
 			"""
 
-	def cycle(self):
-		self.fitnesses = []
-		ds = tf.contrib.learn.datasets.base.load_iris()
-		ins = ds.data
-		outs = ds.target
 
-		for c in self.chromosomes:
-			dims = self.dimensionsForStructure(c)
+	def chromosomeRun(self, c):
+		dims = self.dimensionsForStructure(c)
+		totalLoss = 0.0
+		for _ in range(self.averagesCount):
 			member = gn.GeneticNetwork(c, dims, self.validActivationFunctions)
 			finalLoss = 0.0
 			for epoch in range(self.numEpochs):
-				thisLoss = member.trainStep(ins=ins, outs=outs, chooseCount=50)
+				thisLoss = member.trainStep(ins=self.ins, outs=self.outs)
 				if epoch == self.numEpochs - 1:
 					finalLoss = thisLoss
 				else:
 					continue
-			self.fitnesses += [finalLoss]
 			member.close()
+			totalLoss += finalLoss
+		return totalLoss / float(self.averagesCount)
+
+	def cycle(self):
+		with multiprocessing.Pool(4) as p:
+			self.fitnesses = p.map(self.chromosomeRun, self.chromosomes)
 
 	def generation(self, generationNumber):
 		zippedFitnesses = sorted(zip(self.fitnesses, self.chromosomes), key=lambda x: x[0])
+
+
 		currentTotalFitness = 0.0
 		for f, c in zippedFitnesses:
 			currentTotalFitness += f
@@ -128,6 +153,8 @@ class GeneticPool(object):
 
 		bestFitness, bestChromosome = zippedFitnesses[0]
 		newChromosomes = [list(bestChromosome)]
+
+		print("Current best fitness : ", bestFitness)
 
 		fig = plt.figure(figsize=(12, 12))
 		ax = fig.gca()
@@ -140,7 +167,7 @@ class GeneticPool(object):
 			child = self.crossover(m1, m2)
 			newChromosomes += [child]
 
-		for idx in range(len(newChromosomes)):
+		for idx in list(range(len(newChromosomes)))[1:]:
 			if random.random() < self.mutationRate:
 				newChromosomes[idx] = self.generateChromosome()
 				print("MUTATION at index ", idx, " to chromosome ", newChromosomes[idx])

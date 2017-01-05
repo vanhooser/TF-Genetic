@@ -29,7 +29,8 @@ class GeneticNetwork(object):
 		
 		init = tf.initialize_all_variables()
 		self.sess = tf.Session(config=tf.ConfigProto(
-            inter_op_parallelism_threads=4
+            inter_op_parallelism_threads=4,
+						intra_op_parallelism_threads=4
         ))
 		self.sess.run(init)
 		
