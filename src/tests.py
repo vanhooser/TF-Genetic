@@ -1,100 +1,75 @@
+# -*- coding: utf-8 -*-
+"""#TF-Genetic : genetic algorithm optimization of neural network structures
+
+- This module is used to create and run a genetic algorithm on
+top of TensorFlow-backed neural networks in order to find the
+optimal structure and activation functions for any given problem.
+
+"""
+
 import tensorflow as tf
-import Chromosome as chrom
 import TFGenetic as gen
-import random
 
+TESTING = True
 
-def experiments():
+def run_tests():
+    """#Tests
 
-	# Data sets
-	IRIS_TRAINING = "iris_training.csv"
-	IRIS_TEST = "iris_test.csv"
+    _Run the genetic algorithm testing process_
 
-	
+    Loads the Iris dataset and tries the genetic algorithm
+    """
 
-	print(ins)
+    # Use TensorFlow's built-in Iris dataset
+    iris_dataset = tf.contrib.learn.datasets.base.load_iris()
+    input_data = iris_dataset.data
 
-	netDimensions = [4, 10, 5, 1]
+    # Auto-encode the data
+    output_data = iris_dataset.data
 
-	x = tf.placeholder(tf.float32, [None, netDimensions[0]])
+    # Declare valid activation functions for the network,
+    # and their corresponding colors for plotting
+    valid_activation_function_list = [
+        tf.nn.sigmoid,
+        tf.nn.tanh,
+        tf.nn.relu,
+        tf.nn.softsign,
+        tf.nn.elu]
 
-	previousActivation = x
+    activation_function_colors = [
+        'g',
+        'r',
+        'b',
+        'y',
+        'c']
 
-	for idx in range(1, len(netDimensions)):
-			
-		# Weights ingest dimensions of previous layer and output the current dimension 
-		thisW = tf.Variable(tf.zeros([netDimensions[idx-1], netDimensions[idx]]))
-		thisB = tf.Variable(tf.zeros([netDimensions[idx]]))
-		thisActivation = tf.nn.sigmoid(tf.matmul(previousActivation, thisW) + thisB)
-		previousActivation = thisActivation
+    genetic_pool_settings = {
+        'populationSize' : 30,
+        'tournamentSize' : 4,
+        'memberDimensions' : [4, 3, 2, 3, 4],
+        'mutationRate' : 0.05,
+        'averagesCount' : 1,
+        'validActivationFunctions' : valid_activation_function_list,
+        'activationFunctionColors' : activation_function_colors,
+        'ins' : input_data,
+        'outs' : output_data
+    }
 
-	predictedOutput = previousActivation
-	y_ = tf.placeholder(tf.float32, [None, netDimensions[-1]])
-	cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_ - predictedOutput, reduction_indices=[1]))
-	train_step = tf.train.GradientDescentOptimizer(0.5).minimize(cross_entropy)
-	
+    # Declare the genetic pool and initialize properties
+    genetic_pool = gen.GeneticPool(**genetic_pool_settings)
 
-	init = tf.initialize_all_variables()
-	sess = tf.Session()
-	sess.run(init)
+    # Generate population and train
+    genetic_pool.generatePopulation()
 
-	chooseCount = 50
-
-	for step in range(1000):
-
-		chosenIndices = [random.randint(0, len(ins)-1) for _ in range(chooseCount)]
-		batch_xs, batch_ys = list(zip(*[(ins[x], [outs[x]]) for x in chosenIndices]))
-
-		cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_ - predictedOutput, reduction_indices=[1]))
-
-		_, loss = sess.run([train_step, cross_entropy], feed_dict={x: batch_xs, y_: batch_ys})
-
-		if step % 100 == 0:
-			print(loss)
-	"""
-	activationFunctionDimensions = [[20, 1], [20, 1], [5,1]]
-	c_activated = chrom.LayerChromosome(activationFunctions = validActivationFunctions, layerDimensions=activationFunctionDimensions).construct()
-	print(c_activated)
-	"""
-
+    generation_count = 5
+    for generation_number in range(generation_count):
+        genetic_pool.cycle()
+        genetic_pool.generation(generation_number)
+    genetic_pool.printAllSeenChromosomes()
+    genetic_pool.plotEvolution()
 
 if __name__ == '__main__':
-
-	testing = True
-
-	if testing:
-
-		# Use TensorFlow's built-in Iris dataset
-		ds = tf.contrib.learn.datasets.base.load_iris()
-		ins = ds.data
-
-		# Auto-encode the data
-		outs = ds.data
-
-		# Declare valid activation functions for the network, and their corresponding colors for plotting
-		validActivationFunctions = [tf.nn.sigmoid, tf.nn.tanh, tf.nn.relu, tf.nn.softsign, tf.nn.elu]
-		activationFunctionColors = ['g', 'r', 'b', 'y', 'c']
-
-		# Declare the genetic pool and initialize properties
-		g = gen.GeneticPool(populationSize = 30, 
-			tournamentSize = 4,
-			memberDimensions = [4, 10, 10, 4], 
-			mutationRate = 0.05,
-			averagesCount = 2,
-			validActivationFunctions = validActivationFunctions,
-			activationFunctionColors = activationFunctionColors,
-			ins = ins,
-			outs = outs)
-
-		# Generate population and train
-		g.generatePopulation()
-
-		generationCount = 30
-		for generationNumber in range(generationCount):
-			g.cycle()
-			g.generation(generationNumber)
-		g.plotEvolution()
-	else:
-		experiments()
-
-
+    if TESTING:
+        run_tests()
+    else:
+        print("Nothing to run")

@@ -35,6 +35,8 @@ class GeneticPool(object):
 
 		self.evolutionPlot = []
 
+		self.seenChromosomes = []
+
 		if ins is None and outs is None:
 			ds = tf.contrib.learn.datasets.base.load_iris()
 			self.ins = ds.data
@@ -119,8 +121,13 @@ class GeneticPool(object):
 									ax.add_artist(line)
 			"""
 
+	def printAllSeenChromosomes(self):
+		print(self.seenChromosomes)
 
 	def chromosomeRun(self, c):
+		if not c in self.seenChromosomes:
+			print("Just saw new chromosome : ", c)
+			self.seenChromosomes += [c]
 		dims = self.dimensionsForStructure(c)
 		totalLoss = 0.0
 		for _ in range(self.averagesCount):
@@ -167,8 +174,11 @@ class GeneticPool(object):
 			child = self.crossover(m1, m2)
 			newChromosomes += [child]
 
+
 		for idx in list(range(len(newChromosomes)))[1:]:
-			if random.random() < self.mutationRate:
+			chance = random.random()
+			if chance < self.mutationRate:
+				print("Chance computed : ", chance, ", mutation rate : ", self.mutationRate)
 				newChromosomes[idx] = self.generateChromosome()
 				print("MUTATION at index ", idx, " to chromosome ", newChromosomes[idx])
 		self.chromosomes = newChromosomes
